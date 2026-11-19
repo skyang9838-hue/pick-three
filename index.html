@@ -1,0 +1,334 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>카드 3장 고르기</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<style>
+:root{
+  --bg:#f4f1ea; --card:#fff; --ink:#1d1d1f; --sub:#6b6b70; --line:#dedad0;
+  --pick:#ff6b35; --pick-ink:#fff; --ok:#2a9d8f; --gold:#f4b400;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%}
+body{background:var(--bg);color:var(--ink);font-family:Pretendard,system-ui,sans-serif;
+  -webkit-user-select:none;user-select:none;-webkit-touch-callout:none;overflow:hidden}
+.screen{display:none;position:fixed;inset:0;flex-direction:column;padding:20px 24px}
+.screen.on{display:flex}
+h1{margin:0;font-size:34px;font-weight:800;letter-spacing:-.02em}
+.sub{color:var(--sub);font-size:20px;margin-top:6px}
+.top{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:16px}
+button{font-family:inherit;border:0;cursor:pointer}
+
+/* 번호 판 */
+#nums{flex:1;display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));align-content:start;overflow:auto}
+.num{background:var(--card);border-radius:18px;font-size:40px;font-weight:800;height:96px;position:relative;
+  box-shadow:0 2px 0 var(--line)}
+.num:active{transform:translateY(2px);box-shadow:none}
+.num.done{background:#e5f3f1;color:var(--ok)}
+.num.done::after{content:"✓";position:absolute;top:6px;right:12px;font-size:22px}
+#teacherHot{position:fixed;right:0;bottom:0;width:90px;height:60px;color:#c9c4b8;font-size:13px;
+  display:flex;align-items:flex-end;justify-content:flex-end;padding:0 12px 10px 0}
+
+/* 카드 고르기 */
+#cards{flex:1;display:grid;gap:10px;grid-template-columns:repeat(11,1fr);grid-auto-rows:1fr;min-height:0}
+.c{background:var(--card);border-radius:16px;font-size:clamp(26px,4vw,44px);font-weight:800;box-shadow:0 2px 0 var(--line);
+  transition:transform .08s}
+.c.sel{background:var(--pick);color:var(--pick-ink);box-shadow:0 2px 0 #c94e20}
+.c.dim{opacity:.45}
+.bar{display:flex;align-items:center;gap:14px;margin-top:16px}
+.count{font-size:26px;font-weight:800;flex:1}
+.count b{color:var(--pick)}
+.btn{font-size:24px;font-weight:800;border-radius:16px;padding:18px 34px;background:var(--card);box-shadow:0 2px 0 var(--line)}
+.btn.main{background:var(--ink);color:#fff;box-shadow:none}
+.btn:disabled{opacity:.3}
+.shake{animation:shake .3s}
+@keyframes shake{25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
+
+/* 저장됨 */
+#saved{align-items:center;justify-content:center;text-align:center}
+#saved .big{font-size:56px;font-weight:800}
+#saved .picked{display:flex;gap:16px;justify-content:center;margin:28px 0}
+.chip{background:var(--pick);color:#fff;border-radius:18px;font-size:48px;font-weight:800;width:110px;height:110px;display:flex;align-items:center;justify-content:center}
+
+/* 선생님 */
+#teacher{overflow:auto}
+.row{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin:10px 0}
+.panel{background:var(--card);border-radius:18px;padding:18px 20px;margin-bottom:14px}
+.panel h2{margin:0 0 10px;font-size:22px}
+.miss{font-size:20px;color:var(--sub)}
+label{font-size:18px;display:flex;align-items:center;gap:8px}
+input[type=number]{font:inherit;font-size:20px;width:90px;padding:8px 10px;border:1px solid var(--line);border-radius:10px}
+.tally{display:grid;grid-template-columns:repeat(auto-fill,minmax(72px,1fr));gap:8px}
+.t{border-radius:12px;background:#f2efe8;text-align:center;padding:8px 0}
+.t .n{font-size:22px;font-weight:800}
+.t .v{font-size:16px;color:var(--sub)}
+.t.top{background:var(--pick);color:#fff}.t.top .v{color:#fff}
+.t.rand{background:var(--gold);color:#1d1d1f}
+.final{display:flex;gap:18px;flex-wrap:wrap;margin:6px 0 4px}
+.fc{width:140px;height:160px;border-radius:22px;background:var(--pick);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.fc .n{font-size:64px;font-weight:800;line-height:1}
+.fc .l{font-size:18px;margin-top:8px}
+.fc.rand{background:var(--gold);color:#1d1d1f}
+.fc.empty{background:#ece8df;color:#a19c90}
+.note{font-size:17px;color:var(--sub)}
+.danger{background:#fde8e4;color:#b23a1d;box-shadow:none}
+</style>
+</head>
+<body>
+
+<!-- 1. 번호 판 -->
+<section class="screen on" id="home">
+  <div class="top">
+    <div>
+      <h1 id="title">카드 3장 고르기</h1>
+      <div class="sub">내 번호를 누르세요. 고친 사람도 다시 누르면 돼요.</div>
+    </div>
+    <div class="sub" id="progress"></div>
+  </div>
+  <div id="nums"></div>
+  <div id="teacherHot">선생님</div>
+</section>
+
+<!-- 2. 카드 고르기 -->
+<section class="screen" id="pick">
+  <div class="top">
+    <div>
+      <h1 id="pickWho"></h1>
+      <div class="sub">자료를 보고 하고 싶은 카드 3장을 고르세요. 다시 누르면 빠져요.</div>
+    </div>
+  </div>
+  <div id="cards"></div>
+  <div class="bar">
+    <div class="count" id="count"></div>
+    <button class="btn" id="cancel">취소</button>
+    <button class="btn main" id="done" disabled>완료</button>
+  </div>
+</section>
+
+<!-- 3. 저장됨 -->
+<section class="screen" id="saved">
+  <div class="big" id="savedWho"></div>
+  <div class="picked" id="savedCards"></div>
+  <div class="sub">다음 친구 차례!</div>
+</section>
+
+<!-- 4. 선생님 -->
+<section class="screen" id="teacher">
+  <div class="top">
+    <h1>선생님 화면</h1>
+    <button class="btn main" id="closeT">아이 화면으로</button>
+  </div>
+
+  <div class="panel">
+    <h2 id="tProg"></h2>
+    <div class="miss" id="tMiss"></div>
+  </div>
+
+  <div class="panel">
+    <h2>오늘 할 카드</h2>
+    <div class="final" id="final"></div>
+    <div class="note" id="tieNote"></div>
+    <div class="row">
+      <button class="btn main" id="reveal">투표 결과 보기</button>
+      <button class="btn" id="randBtn" disabled>랜덤 1장 뽑기</button>
+    </div>
+  </div>
+
+  <div class="panel" id="tallyPanel" style="display:none">
+    <h2>카드별 표</h2>
+    <div class="tally" id="tally"></div>
+  </div>
+
+  <div class="panel">
+    <h2>설정</h2>
+    <div class="row">
+      <label>학생 수 <input type="number" id="setStu" min="1" max="40"></label>
+      <label>카드 수 <input type="number" id="setCards" min="4" max="60"></label>
+      <button class="btn" id="saveSet">저장</button>
+    </div>
+    <div class="row">
+      <button class="btn danger" id="resetBtn">투표 전부 지우기</button>
+      <span class="note" id="resetNote"></span>
+    </div>
+  </div>
+</section>
+
+<script>
+const KEY = "pick-three-v1";
+let mem = null;
+function load(){
+  try{ const s = JSON.parse(localStorage.getItem(KEY)); if (s) return s; }catch(e){}
+  return mem || { students:25, cards:33, picks:3, votes:{}, revealed:false, top:null, tieNote:"", rand:null };
+}
+function save(){ mem = S; try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){} }
+let S = load();
+
+const $ = id => document.getElementById(id);
+function show(id){ document.querySelectorAll(".screen").forEach(s => s.classList.toggle("on", s.id === id)); }
+
+/* 번호 판 */
+function renderHome(){
+  const nums = $("nums"); nums.innerHTML = "";
+  for (let i = 1; i <= S.students; i++){
+    const b = document.createElement("button");
+    b.className = "num" + (S.votes[i] ? " done" : "");
+    b.textContent = i;
+    b.onclick = () => openPick(i);
+    nums.appendChild(b);
+  }
+  $("progress").textContent = `${Object.keys(S.votes).length} / ${S.students}명 완료`;
+  show("home");
+}
+
+/* 카드 고르기 */
+let who = null, sel = [];
+function openPick(n){
+  who = n; sel = (S.votes[n] || []).slice();
+  $("pickWho").textContent = `${n}번`;
+  const cards = $("cards"); cards.innerHTML = "";
+  const cols = S.cards <= 33 ? 11 : 12;
+  cards.style.gridTemplateColumns = `repeat(${cols},1fr)`;
+  for (let i = 1; i <= S.cards; i++){
+    const b = document.createElement("button");
+    b.className = "c"; b.textContent = i; b.dataset.n = i;
+    b.onclick = () => toggle(i, b);
+    cards.appendChild(b);
+  }
+  paintPick(); show("pick");
+}
+function toggle(i, b){
+  const k = sel.indexOf(i);
+  if (k >= 0) sel.splice(k, 1);
+  else if (sel.length < S.picks) sel.push(i);
+  else { const c = $("count"); c.classList.remove("shake"); void c.offsetWidth; c.classList.add("shake"); return; }
+  paintPick();
+}
+function paintPick(){
+  const full = sel.length >= S.picks;
+  document.querySelectorAll("#cards .c").forEach(b => {
+    const on = sel.includes(+b.dataset.n);
+    b.classList.toggle("sel", on);
+    b.classList.toggle("dim", full && !on);
+  });
+  $("count").innerHTML = full ? `<b>${S.picks}장</b> 다 골랐어요! 완료를 누르세요`
+                              : `<b>${sel.length}</b> / ${S.picks}장 골랐어요`;
+  $("done").disabled = !full;
+}
+$("cancel").onclick = renderHome;
+$("done").onclick = () => {
+  S.votes[who] = sel.slice().sort((a,b) => a-b);
+  // 투표가 바뀌면 이미 본 결과는 다시 계산해야 한다
+  S.revealed = false; S.top = null; S.tieNote = ""; S.rand = null;
+  save();
+  $("savedWho").textContent = `${who}번 저장했어요!`;
+  $("savedCards").innerHTML = S.votes[who].map(n => `<div class="chip">${n}</div>`).join("");
+  show("saved");
+  setTimeout(renderHome, 1800);
+};
+
+/* 선생님 화면: 오른쪽 아래를 1초 누르기 */
+let hold = null;
+const hot = $("teacherHot");
+hot.addEventListener("pointerdown", () => { hold = setTimeout(openTeacher, 1000); });
+["pointerup","pointerleave","pointercancel"].forEach(e => hot.addEventListener(e, () => clearTimeout(hold)));
+document.addEventListener("contextmenu", e => e.preventDefault());
+
+function tallyCounts(){
+  const t = {}; for (let i = 1; i <= S.cards; i++) t[i] = 0;
+  Object.values(S.votes).forEach(arr => arr.forEach(n => { if (t[n] !== undefined) t[n]++; }));
+  return t;
+}
+function pickTop(t){
+  // 표 많은 순으로 3장. 3등 자리가 동점이면 그 안에서 랜덤.
+  const groups = {};
+  Object.entries(t).forEach(([n,v]) => { if (v > 0) (groups[v] = groups[v] || []).push(+n); });
+  const levels = Object.keys(groups).map(Number).sort((a,b) => b-a);
+  const top = []; let note = "";
+  for (const v of levels){
+    const g = groups[v];
+    const need = 3 - top.length;
+    if (need <= 0) break;
+    if (g.length <= need) top.push(...g);
+    else {
+      const shuffled = g.slice().sort(() => Math.random() - .5).slice(0, need);
+      note = `${v}표 동점(${g.sort((a,b)=>a-b).join(", ")}번) 중에서 ${shuffled.sort((a,b)=>a-b).join(", ")}번을 랜덤으로 골랐어요.`;
+      top.push(...shuffled);
+    }
+  }
+  return { top, note };
+}
+
+function openTeacher(){
+  const voted = Object.keys(S.votes).map(Number);
+  const miss = []; for (let i = 1; i <= S.students; i++) if (!S.votes[i]) miss.push(i);
+  $("tProg").textContent = `${voted.length} / ${S.students}명 투표했어요`;
+  $("tMiss").textContent = miss.length ? `아직 안 한 번호: ${miss.join(", ")}` : "모두 했어요!";
+  $("setStu").value = S.students; $("setCards").value = S.cards;
+  $("resetNote").textContent = ""; resetArmed = false; $("resetBtn").textContent = "투표 전부 지우기";
+  renderResult();
+  show("teacher");
+}
+function renderResult(){
+  const t = tallyCounts();
+  const f = $("final");
+  const slots = [];
+  for (let i = 0; i < 3; i++){
+    const n = S.revealed && S.top ? S.top[i] : null;
+    slots.push(n ? `<div class="fc"><div class="n">${n}</div><div class="l">투표 ${t[n]}표</div></div>`
+                 : `<div class="fc empty"><div class="n">?</div><div class="l">투표 ${i+1}</div></div>`);
+  }
+  slots.push(S.rand ? `<div class="fc rand"><div class="n" id="randN">${S.rand}</div><div class="l">랜덤</div></div>`
+                    : `<div class="fc empty"><div class="n" id="randN">?</div><div class="l">랜덤</div></div>`);
+  f.innerHTML = slots.join("");
+  $("tieNote").textContent = S.revealed ? S.tieNote : "";
+  $("randBtn").disabled = !S.revealed;
+  $("randBtn").textContent = S.rand ? "랜덤 다시 뽑기" : "랜덤 1장 뽑기";
+  $("reveal").textContent = S.revealed ? "결과 다시 계산" : "투표 결과 보기";
+  $("tallyPanel").style.display = S.revealed ? "" : "none";
+  if (S.revealed){
+    $("tally").innerHTML = Object.entries(t).sort((a,b) => b[1]-a[1] || a[0]-b[0]).map(([n,v]) =>
+      `<div class="t${S.top.includes(+n) ? " top" : ""}${S.rand == n ? " rand" : ""}"><div class="n">${n}</div><div class="v">${v}표</div></div>`).join("");
+  }
+}
+$("reveal").onclick = () => {
+  if (!Object.keys(S.votes).length){ $("tieNote").textContent = "아직 투표한 사람이 없어요."; return; }
+  const { top, note } = pickTop(tallyCounts());
+  S.revealed = true; S.top = top; S.tieNote = note; S.rand = null;
+  save(); renderResult();
+};
+let rolling = false;
+$("randBtn").onclick = () => {
+  if (rolling || !S.revealed) return;
+  const pool = []; for (let i = 1; i <= S.cards; i++) if (!S.top.includes(i)) pool.push(i);
+  const final = pool[Math.floor(Math.random() * pool.length)];
+  S.rand = null; renderResult();
+  const slot = $("randN").parentElement; slot.classList.remove("empty"); slot.classList.add("rand");
+  rolling = true; let k = 0; const steps = 26;
+  (function tick(){
+    $("randN").textContent = pool[Math.floor(Math.random() * pool.length)];
+    if (++k < steps) setTimeout(tick, 40 + k * k * 0.5);
+    else { S.rand = final; save(); rolling = false; renderResult(); }
+  })();
+};
+$("saveSet").onclick = () => {
+  const st = Math.max(1, Math.min(40, +$("setStu").value || S.students));
+  const cd = Math.max(4, Math.min(60, +$("setCards").value || S.cards));
+  S.students = st;
+  if (cd !== S.cards){ S.cards = cd; Object.keys(S.votes).forEach(k => { S.votes[k] = S.votes[k].filter(n => n <= cd); }); }
+  S.revealed = false; S.top = null; S.rand = null;
+  save(); openTeacher();
+};
+let resetArmed = false;
+$("resetBtn").onclick = () => {
+  if (!resetArmed){ resetArmed = true; $("resetBtn").textContent = "정말 지울까요? 한 번 더 누르기"; return; }
+  S.votes = {}; S.revealed = false; S.top = null; S.tieNote = ""; S.rand = null;
+  save(); openTeacher(); $("resetNote").textContent = "지웠어요.";
+};
+$("closeT").onclick = renderHome;
+
+renderHome();
+</script>
+</body>
+</html>
