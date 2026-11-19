@@ -2,331 +2,478 @@
 <html lang="ko">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>카드 3장 고르기</title>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#14183a">
+<title>헤맨 만큼 내 땅이다</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/galmuri@2.39.9/dist/galmuri.css">
 <style>
 :root{
-  --bg:#f4f1ea; --card:#fff; --ink:#1d1d1f; --sub:#6b6b70; --line:#dedad0;
-  --pick:#ff6b35; --pick-ink:#fff; --ok:#2a9d8f; --gold:#f4b400;
+  --bg:#14183a; --bg2:#1c2150; --tile:#262c63; --tile2:#2f3676; --edge:#0c0f28;
+  --ink:#f5f3ff; --ink2:#b9bce6; --ink3:#7f84bd;
+  --gold:#ffd23f; --gold-d:#c99a00;
+  --c1:#ffe45c; --c2:#ff5cad; --c3:#a6f04d; --c4:#a97cff; --c5:#4de8ff; --c6:#ffa050;
+  --px:"Galmuri11","Galmuri9",Pretendard,sans-serif;
+  --step:6px;
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;height:100%}
-body{background:var(--bg);color:var(--ink);font-family:Pretendard,system-ui,sans-serif;
-  -webkit-user-select:none;user-select:none;-webkit-touch-callout:none;overflow:hidden}
-.screen{display:none;position:fixed;inset:0;flex-direction:column;padding:20px 24px}
+body{background:var(--bg);color:var(--ink);font-family:Pretendard,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  -webkit-font-smoothing:antialiased;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;overflow:hidden;touch-action:manipulation}
+/* 아주 옅은 모눈: 픽셀아트 도안 종이 */
+body::before{content:"";position:fixed;inset:0;pointer-events:none;
+  background-image:linear-gradient(rgba(255,255,255,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.035) 1px,transparent 1px);
+  background-size:28px 28px}
+button{font:inherit;color:inherit;border:0;background:none;cursor:pointer;padding:0}
+[hidden]{display:none!important}
+
+/* 계단 모서리 (픽셀 타일) */
+.px{clip-path:polygon(0 var(--step),var(--step) var(--step),var(--step) 0,calc(100% - var(--step)) 0,calc(100% - var(--step)) var(--step),100% var(--step),100% calc(100% - var(--step)),calc(100% - var(--step)) calc(100% - var(--step)),calc(100% - var(--step)) 100%,var(--step) 100%,var(--step) calc(100% - var(--step)),0 calc(100% - var(--step)))}
+
+.screen{position:fixed;inset:0;display:none;padding:max(18px,env(safe-area-inset-top)) clamp(16px,2.4vw,32px) max(16px,env(safe-area-inset-bottom))}
 .screen.on{display:flex}
-h1{margin:0;font-size:34px;font-weight:800;letter-spacing:-.02em}
-.sub{color:var(--sub);font-size:20px;margin-top:6px}
-.top{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:16px}
-button{font-family:inherit;border:0;cursor:pointer}
 
-/* 번호 판 */
-#nums{flex:1;display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));align-content:start;overflow:auto}
-.num{background:var(--card);border-radius:18px;font-size:40px;font-weight:800;height:96px;position:relative;
-  box-shadow:0 2px 0 var(--line)}
-.num:active{transform:translateY(2px);box-shadow:none}
-.num.done{background:#e5f3f1;color:var(--ok)}
-.num.done::after{content:"✓";position:absolute;top:6px;right:12px;font-size:22px}
-#teacherHot{position:fixed;right:0;bottom:0;width:90px;height:60px;color:#c9c4b8;font-size:13px;
-  display:flex;align-items:flex-end;justify-content:flex-end;padding:0 12px 10px 0}
+/* ---------- 1. 번호 판 ---------- */
+#home{align-items:center;justify-content:center;gap:clamp(24px,5vw,72px)}
+.hero{max-width:420px}
+.kicker{font-family:var(--px);font-weight:700;font-size:15px;color:var(--gold);letter-spacing:.08em;display:flex;align-items:center;gap:8px}
+.kicker svg{width:16px;height:16px}
+.hero h1{font-family:var(--px);font-weight:700;font-size:clamp(40px,5.4vw,68px);line-height:1.12;margin:14px 0 18px;letter-spacing:-.01em;
+  text-shadow:0 4px 0 var(--edge)}
+.hero h1 em{font-style:normal;color:var(--gold)}
+.hero p{margin:0;font-size:clamp(17px,1.7vw,21px);line-height:1.6;color:var(--ink2)}
+.hero p b{color:var(--ink)}
+.meter{margin-top:28px}
+.meter .lab{font-family:var(--px);font-weight:700;font-size:14px;color:var(--ink3);display:flex;justify-content:space-between;margin-bottom:8px}
+.meter .lab b{color:var(--ink);font-weight:400}
+.cells{display:grid;grid-template-columns:repeat(var(--n,25),1fr);gap:3px;height:16px}
+.cells i{background:var(--tile)}
+.cells i.on{background:var(--gold)}
 
-/* 카드 고르기 */
-#cards{flex:1;display:grid;gap:10px;grid-template-columns:repeat(11,1fr);grid-auto-rows:1fr;min-height:0}
-.c{background:var(--card);border-radius:16px;font-size:clamp(26px,4vw,44px);font-weight:800;box-shadow:0 2px 0 var(--line);
-  transition:transform .08s}
-.c.sel{background:var(--pick);color:var(--pick-ink);box-shadow:0 2px 0 #c94e20}
-.c.dim{opacity:.45}
-.bar{display:flex;align-items:center;gap:14px;margin-top:16px}
-.count{font-size:26px;font-weight:800;flex:1}
-.count b{color:var(--pick)}
-.btn{font-size:24px;font-weight:800;border-radius:16px;padding:18px 34px;background:var(--card);box-shadow:0 2px 0 var(--line)}
-.btn.main{background:var(--ink);color:#fff;box-shadow:none}
-.btn:disabled{opacity:.3}
-.shake{animation:shake .3s}
-@keyframes shake{25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
+#nums{display:grid;grid-template-columns:repeat(5,1fr);gap:clamp(8px,1.1vw,14px);width:min(560px,92vw)}
+.num{--step:7px;aspect-ratio:1/1;background:var(--tile);position:relative;
+  font-family:var(--px);font-weight:700;font-size:clamp(30px,3.6vw,44px);
+  box-shadow:inset 0 -6px 0 rgba(0,0,0,.28),inset 0 4px 0 rgba(255,255,255,.07);transition:transform .08s}
+.num:active{transform:translateY(3px)}
+.num.done{background:#2b5b4c;color:#d7ffe9}
+.num.done .flag{position:absolute;top:9px;right:9px;width:18px;height:18px;color:var(--c3)}
+.num:not(.done) .flag{display:none}
 
-/* 저장됨 */
-#saved{align-items:center;justify-content:center;text-align:center}
-#saved .big{font-size:56px;font-weight:800}
-#saved .picked{display:flex;gap:16px;justify-content:center;margin:28px 0}
-.chip{background:var(--pick);color:#fff;border-radius:18px;font-size:48px;font-weight:800;width:110px;height:110px;display:flex;align-items:center;justify-content:center}
+#hold{position:fixed;right:0;bottom:0;width:120px;height:80px;display:flex;align-items:flex-end;justify-content:flex-end;
+  padding:0 16px 14px 0;font-family:var(--px);font-weight:700;font-size:13px;color:#3d4380}
+#hold .ring{width:22px;height:22px;margin-right:8px;opacity:0;transition:opacity .15s}
+#hold.holding .ring{opacity:1}
+#hold .ring circle{transition:none}
 
-/* 선생님 */
-#teacher{overflow:auto}
-.row{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin:10px 0}
-.panel{background:var(--card);border-radius:18px;padding:18px 20px;margin-bottom:14px}
-.panel h2{margin:0 0 10px;font-size:22px}
-.miss{font-size:20px;color:var(--sub)}
-label{font-size:18px;display:flex;align-items:center;gap:8px}
-input[type=number]{font:inherit;font-size:20px;width:90px;padding:8px 10px;border:1px solid var(--line);border-radius:10px}
-.tally{display:grid;grid-template-columns:repeat(auto-fill,minmax(72px,1fr));gap:8px}
-.t{border-radius:12px;background:#f2efe8;text-align:center;padding:8px 0}
-.t .n{font-size:22px;font-weight:800}
-.t .v{font-size:16px;color:var(--sub)}
-.t.top{background:var(--pick);color:#fff}.t.top .v{color:#fff}
-.t.rand{background:var(--gold);color:#1d1d1f}
-.final{display:flex;gap:18px;flex-wrap:wrap;margin:6px 0 4px}
-.fc{width:140px;height:160px;border-radius:22px;background:var(--pick);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center}
-.fc .n{font-size:64px;font-weight:800;line-height:1}
-.fc .l{font-size:18px;margin-top:8px}
-.fc.rand{background:var(--gold);color:#1d1d1f}
-.fc.empty{background:#ece8df;color:#a19c90}
-.note{font-size:17px;color:var(--sub)}
-.danger{background:#fde8e4;color:#b23a1d;box-shadow:none}
+/* ---------- 2. 땅 고르기 ---------- */
+#pick{flex-direction:column;gap:clamp(10px,1.6vh,16px)}
+.pickhead{display:flex;align-items:center;gap:clamp(10px,1.4vw,18px);flex-wrap:nowrap}
+.pickhead > *{flex:none}
+.pickhead .ask{flex:1 1 auto;min-width:0}
+.pickhead .ask small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@media (max-width:1180px){ .pickhead .ask small{display:none} }
+@media (max-width:1100px){ .slot{min-width:0!important;max-width:118px;flex:0 1 118px} .slot.full{font-size:13px;padding:0 8px;white-space:nowrap;overflow:hidden} .pickhead .back{padding:0 6px} }
+.who{--step:5px;background:var(--gold);color:#2a2000;font-family:var(--px);font-weight:700;font-size:clamp(24px,2.6vw,32px);
+  padding:10px 18px;box-shadow:inset 0 -5px 0 var(--gold-d)}
+.ask{font-size:clamp(18px,1.9vw,24px);font-weight:700;line-height:1.3}
+.ask small{display:block;font-size:clamp(13px,1.2vw,15px);font-weight:500;color:var(--ink3);margin-top:3px}
+.slots{display:flex;gap:8px;margin-left:auto}
+.slot{--step:5px;min-width:clamp(92px,10vw,140px);height:52px;padding:0 12px;display:flex;align-items:center;justify-content:center;gap:8px;
+  background:transparent;outline:2px dashed #3a4182;outline-offset:-2px;color:var(--ink3);font-family:var(--px);font-weight:700;font-size:15px}
+.slot.full{outline:0;background:var(--cc);color:#1a1530;font-family:Pretendard,sans-serif;font-weight:800;font-size:clamp(14px,1.35vw,17px);
+  box-shadow:inset 0 -4px 0 rgba(0,0,0,.22)}
+.slot .k{font-family:var(--px);font-weight:700;font-size:13px;opacity:.7}
+.go{--step:6px;height:52px;padding:0 26px;background:var(--gold);color:#2a2000;font-family:var(--px);font-weight:700;font-size:20px;
+  box-shadow:inset 0 -5px 0 var(--gold-d);transition:transform .08s,filter .2s}
+.go:disabled{background:#2a3068;color:#5a609e;box-shadow:inset 0 -5px 0 rgba(0,0,0,.25)}
+.go:not(:disabled){animation:nudge 1.4s ease-in-out infinite}
+@keyframes nudge{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+.back{height:52px;padding:0 16px;color:var(--ink3);font-family:var(--px);font-weight:700;font-size:15px}
+
+#board{flex:1;min-height:0;display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:clamp(6px,.9vw,12px)}
+.col{display:grid;grid-template-rows:auto repeat(8,minmax(0,1fr));gap:clamp(5px,.7vh,8px);min-height:0}
+.colh{font-family:var(--px);font-weight:700;font-size:clamp(13px,1.25vw,16px);color:var(--cc);display:flex;align-items:center;gap:7px;padding:2px 2px 4px;white-space:nowrap;overflow:hidden}
+.colh::before{content:"";width:10px;height:10px;background:var(--cc);flex:none;box-shadow:2px 2px 0 var(--edge)}
+.land{--step:5px;position:relative;background:var(--tile);text-align:left;padding:0 10px 0 16px;display:flex;align-items:center;min-height:0;
+  box-shadow:inset 0 -5px 0 rgba(0,0,0,.28),inset 5px 0 0 var(--cc);transition:transform .08s,background .12s}
+.land:active{transform:translateY(2px)}
+.land .nm{font-weight:700;font-size:clamp(14px,1.55vw,21px);line-height:1.2;word-break:keep-all}
+.land .pg{position:absolute;right:8px;bottom:7px;font-family:var(--px);font-weight:700;font-size:11px;color:var(--ink3)}
+.land .badge{position:absolute;top:6px;right:7px;width:24px;height:24px;display:none;align-items:center;justify-content:center;
+  background:#1a1530;color:var(--cc);font-family:var(--px);font-weight:700;font-size:14px}
+.land.sel{background:var(--cc);color:#1a1530;box-shadow:inset 0 -5px 0 rgba(0,0,0,.25),0 0 0 3px var(--bg),0 0 0 5px var(--cc)}
+.land.sel .badge{display:flex}
+.land.sel .pg{color:rgba(26,21,48,.55)}
+.land.dim{opacity:.38}
+.land.own{background:repeating-linear-gradient(45deg,var(--tile) 0 8px,var(--tile2) 8px 16px)}
+.land.own.sel{background:var(--cc)}
+.shake{animation:shake .32s}
+@keyframes shake{20%{transform:translateX(-7px)}60%{transform:translateX(7px)}}
+
+/* ---------- 3. 내 땅 공개 ---------- */
+#reveal{flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:clamp(18px,3vh,30px)}
+#reveal h2{font-family:var(--px);font-weight:700;font-size:clamp(30px,3.8vw,48px);margin:0;text-shadow:0 4px 0 var(--edge)}
+#reveal h2 em{font-style:normal;color:var(--gold)}
+.four{display:flex;gap:clamp(10px,1.6vw,20px);flex-wrap:wrap;justify-content:center}
+.card{--step:8px;width:clamp(140px,17vw,210px);aspect-ratio:3/4;background:var(--cc);color:#1a1530;position:relative;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:14px;
+  box-shadow:inset 0 -8px 0 rgba(0,0,0,.22),inset 0 6px 0 rgba(255,255,255,.25)}
+.card .t{font-family:var(--px);font-weight:700;font-size:14px;opacity:.75}
+.card .n{font-weight:800;font-size:clamp(22px,2.4vw,30px);line-height:1.2;word-break:keep-all}
+.card .p{font-family:var(--px);font-weight:700;font-size:13px;opacity:.6}
+.card svg{width:34px;height:34px}
+.card.mystery{background:var(--tile);color:var(--ink);box-shadow:inset 0 -8px 0 rgba(0,0,0,.3),0 0 0 3px var(--bg),0 0 0 6px var(--gold)}
+.card.mystery .n{font-size:clamp(20px,2.2vw,28px)}
+.card.rand{background:var(--gold);box-shadow:inset 0 -8px 0 var(--gold-d),inset 0 6px 0 rgba(255,255,255,.35),0 0 0 3px var(--bg),0 0 0 6px var(--gold),0 0 40px rgba(255,210,63,.45)}
+.card.land-in{animation:land .5s cubic-bezier(.3,1.6,.5,1)}
+@keyframes land{0%{transform:scale(.7) rotate(-4deg)}100%{transform:scale(1) rotate(0)}}
+.card.pop{animation:pop .45s steps(4)}
+@keyframes pop{0%{transform:translateY(16px);opacity:0}100%{transform:none;opacity:1}}
+.rnote{font-size:clamp(15px,1.5vw,18px);color:var(--ink2);min-height:1.5em}
+.next{--step:6px;height:60px;padding:0 34px;background:var(--gold);color:#2a2000;font-family:var(--px);font-weight:700;font-size:21px;
+  box-shadow:inset 0 -5px 0 var(--gold-d)}
+.next:disabled{opacity:0}
+.confetti{position:fixed;inset:0;pointer-events:none;overflow:hidden}
+.confetti i{position:absolute;width:10px;height:10px;top:-12px;animation:fall linear forwards}
+@keyframes fall{to{transform:translateY(110vh) rotate(var(--r))}}
+
+/* ---------- 4. 선생님 ---------- */
+#teacher{flex-direction:column;overflow:auto;gap:14px}
+.thead{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.thead h2{font-family:var(--px);font-weight:700;font-size:26px;margin:0;flex:1}
+.tb{--step:5px;height:46px;padding:0 18px;background:var(--tile);font-family:var(--px);font-weight:700;font-size:15px;box-shadow:inset 0 -4px 0 rgba(0,0,0,.28)}
+.tb.gold{background:var(--gold);color:#2a2000;box-shadow:inset 0 -4px 0 var(--gold-d)}
+.tb.warn{background:#5a2238;color:#ffc2d4}
+.tgrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.25fr);gap:14px;align-items:start}
+@media (max-width:900px){.tgrid{grid-template-columns:1fr}}
+.panel{--step:8px;background:var(--bg2);padding:18px 20px}
+.panel h3{font-family:var(--px);font-weight:700;font-size:17px;margin:0 0 12px;color:var(--gold);font-weight:400;display:flex;justify-content:space-between;gap:10px}
+.panel h3 span{color:var(--ink2)}
+.big{font-family:var(--px);font-weight:700;font-size:40px}
+.big small{font-size:18px;color:var(--ink3)}
+.miss{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.miss i{font-style:normal;font-family:var(--px);font-weight:700;font-size:15px;background:var(--tile);padding:6px 10px}
+.prints{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px}
+.pr{display:flex;align-items:center;gap:8px;background:var(--tile);padding:8px 10px;box-shadow:inset 4px 0 0 var(--cc)}
+.pr .pg{font-family:var(--px);font-weight:700;font-size:12px;color:var(--ink3);width:30px}
+.pr .nm{flex:1;font-weight:700;font-size:15px;word-break:keep-all}
+.pr .ct{font-family:var(--px);font-weight:700;font-size:18px;color:var(--gold)}
+.pr.zero{opacity:.35}
+.pr.zero .ct{color:var(--ink3)}
+table{width:100%;border-collapse:collapse;font-size:15px}
+td{padding:7px 6px;border-bottom:1px solid #2a2f66;vertical-align:middle}
+td:first-child{font-family:var(--px);font-weight:700;width:44px;color:var(--ink2)}
+.tag{display:inline-block;padding:3px 8px;margin:2px 3px 2px 0;background:var(--cc);color:#1a1530;font-weight:700;font-size:13px}
+.tag.r{background:var(--gold)}
+.tag.r::before{content:"🎲 "}
+.setrow{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.setrow label{font-size:16px;color:var(--ink2);display:flex;align-items:center;gap:8px}
+.setrow input{font:inherit;font-family:var(--px);font-weight:700;font-size:18px;width:76px;padding:8px 10px;background:var(--tile);color:var(--ink);border:0}
+.note{font-size:14px;color:var(--ink3);margin-top:10px;line-height:1.5}
+
+/* 세로 화면 */
+@media (orientation:portrait){
+  #home{flex-direction:column;justify-content:center}
+  .hero{text-align:center;max-width:none}
+  .kicker{justify-content:center}
+  .pickhead{flex-wrap:wrap}
+  .pickhead .ask small{display:block;white-space:normal}
+  .slots{margin-left:0;width:100%;order:5}
+  .slot{max-width:none!important;flex:1!important}
+  .slot{flex:1;min-width:0}
+}
 </style>
 </head>
 <body>
 
+<svg width="0" height="0" style="position:absolute">
+  <!-- 픽셀 깃발: 내 땅 표시 -->
+  <symbol id="flag" viewBox="0 0 8 8" shape-rendering="crispEdges">
+    <rect x="1" y="0" width="1" height="8" fill="currentColor"/>
+    <rect x="2" y="0" width="4" height="1" fill="currentColor"/><rect x="2" y="1" width="5" height="1" fill="currentColor"/>
+    <rect x="2" y="2" width="5" height="1" fill="currentColor"/><rect x="2" y="3" width="4" height="1" fill="currentColor"/>
+  </symbol>
+  <symbol id="dice" viewBox="0 0 8 8" shape-rendering="crispEdges">
+    <rect x="0" y="0" width="8" height="8" fill="currentColor"/>
+    <rect x="1" y="1" width="2" height="2" fill="#ffd23f"/><rect x="5" y="5" width="2" height="2" fill="#ffd23f"/><rect x="3" y="3" width="2" height="2" fill="#ffd23f"/>
+  </symbol>
+</svg>
+
 <!-- 1. 번호 판 -->
 <section class="screen on" id="home">
-  <div class="top">
-    <div>
-      <h1 id="title">카드 3장 고르기</h1>
-      <div class="sub">내 번호를 누르세요. 고친 사람도 다시 누르면 돼요.</div>
+  <div class="hero">
+    <div class="kicker"><svg><use href="#flag"/></svg>픽셀아트 명예의 전당</div>
+    <h1>헤맨 만큼<br><em>내 땅</em>이다!</h1>
+    <p>내 번호를 누르고 <b>땅 3개</b>를 고르세요.<br>마지막 1개는 <b>랜덤</b>으로 받아요.</p>
+    <div class="meter">
+      <div class="lab"><span>고른 친구</span><span><b id="doneN">0</b> / <span id="totN">25</span></span></div>
+      <div class="cells" id="cells"></div>
     </div>
-    <div class="sub" id="progress"></div>
   </div>
   <div id="nums"></div>
-  <div id="teacherHot">선생님</div>
+  <button id="hold" aria-label="선생님 화면 (1초 누르기)">
+    <svg class="ring" viewBox="0 0 22 22"><circle cx="11" cy="11" r="9" fill="none" stroke="#3d4380" stroke-width="3"/>
+      <circle id="ringFill" cx="11" cy="11" r="9" fill="none" stroke="#ffd23f" stroke-width="3" stroke-dasharray="56.5" stroke-dashoffset="56.5" transform="rotate(-90 11 11)"/></svg>
+    선생님
+  </button>
 </section>
 
-<!-- 2. 카드 고르기 -->
+<!-- 2. 땅 고르기 -->
 <section class="screen" id="pick">
-  <div class="top">
-    <div>
-      <h1 id="pickWho"></h1>
-      <div class="sub">자료를 보고 하고 싶은 카드 3장을 고르세요. 다시 누르면 빠져요.</div>
-    </div>
+  <div class="pickhead">
+    <div class="who px" id="who">7번</div>
+    <div class="ask">넓히고 싶은 땅 3개를 고르세요<small>다시 누르면 빠져요 · 이미 이룬 땅도, 앞으로 넓힐 땅도 좋아요</small></div>
+    <div class="slots" id="slots"></div>
+    <button class="back" id="back">취소</button>
+    <button class="go px" id="done" disabled>완료 ▶</button>
   </div>
-  <div id="cards"></div>
-  <div class="bar">
-    <div class="count" id="count"></div>
-    <button class="btn" id="cancel">취소</button>
-    <button class="btn main" id="done" disabled>완료</button>
-  </div>
+  <div id="board"></div>
 </section>
 
-<!-- 3. 저장됨 -->
-<section class="screen" id="saved">
-  <div class="big" id="savedWho"></div>
-  <div class="picked" id="savedCards"></div>
-  <div class="sub">다음 친구 차례!</div>
+<!-- 3. 내 땅 공개 -->
+<section class="screen" id="reveal">
+  <h2 id="rTitle"></h2>
+  <div class="four" id="four"></div>
+  <div class="rnote" id="rNote"></div>
+  <button class="next px" id="next" disabled>다음 친구에게 ▶</button>
 </section>
 
 <!-- 4. 선생님 -->
 <section class="screen" id="teacher">
-  <div class="top">
-    <h1>선생님 화면</h1>
-    <button class="btn main" id="closeT">아이 화면으로</button>
+  <div class="thead">
+    <h2>선생님 화면</h2>
+    <button class="tb gold px" id="toKids">아이 화면으로</button>
   </div>
-
-  <div class="panel">
-    <h2 id="tProg"></h2>
-    <div class="miss" id="tMiss"></div>
-  </div>
-
-  <div class="panel">
-    <h2>오늘 할 카드</h2>
-    <div class="final" id="final"></div>
-    <div class="note" id="tieNote"></div>
-    <div class="row">
-      <button class="btn main" id="reveal">투표 결과 보기</button>
-      <button class="btn" id="randBtn" disabled>랜덤 1장 뽑기</button>
+  <div class="tgrid">
+    <div>
+      <div class="panel px">
+        <h3>고른 친구</h3>
+        <div class="big" id="tDone"></div>
+        <div class="miss" id="tMiss"></div>
+      </div>
+      <div class="panel px" style="margin-top:14px">
+        <h3>도안 인쇄 장수 <span id="tSheets"></span></h3>
+        <div class="prints" id="tPrints"></div>
+      </div>
     </div>
-  </div>
-
-  <div class="panel" id="tallyPanel" style="display:none">
-    <h2>카드별 표</h2>
-    <div class="tally" id="tally"></div>
-  </div>
-
-  <div class="panel">
-    <h2>설정</h2>
-    <div class="row">
-      <label>학생 수 <input type="number" id="setStu" min="1" max="40"></label>
-      <label>카드 수 <input type="number" id="setCards" min="4" max="60"></label>
-      <button class="btn" id="saveSet">저장</button>
-    </div>
-    <div class="row">
-      <button class="btn danger" id="resetBtn">투표 전부 지우기</button>
-      <span class="note" id="resetNote"></span>
+    <div>
+      <div class="panel px">
+        <h3>번호별 땅 4개</h3>
+        <table id="tTable"></table>
+      </div>
+      <div class="panel px" style="margin-top:14px">
+        <h3>설정</h3>
+        <div class="setrow">
+          <label>학생 수 <input type="number" id="setStu" min="1" max="40" inputmode="numeric"></label>
+          <button class="tb px" id="saveSet">저장</button>
+          <button class="tb warn px" id="wipe">전부 지우기</button>
+        </div>
+        <div class="note" id="wipeNote">랜덤 땅은 고른 3개와 겹치지 않고, 나만의 땅(33쪽)은 랜덤에서 빠져요. 친구가 다시 고쳐도 랜덤 땅은 그대로예요(고친 3개와 겹칠 때만 다시 뽑아요). 표는 이 태블릿에만 저장돼요.</div>
+      </div>
     </div>
   </div>
 </section>
 
+<div class="confetti" id="confetti"></div>
+
 <script>
-const KEY = "pick-three-v1";
+/* 도안 목록: 「헤맨만큼내땅이다 픽셀아트도안 전체.pdf」 목차 (쪽 = PDF 쪽) */
+const CATS = [
+  { name:"학습·수업 태도", c:"var(--c1)", items:[[2,"집중"],[3,"숙제"],[4,"질문"],[5,"책"],[6,"수학"]] },
+  { name:"친구 관계",     c:"var(--c2)", items:[[7,"우정"],[8,"화해"],[9,"먼저 다가가기"],[10,"협동"],[11,"나눔"],[12,"감사"]] },
+  { name:"건강·생활 습관", c:"var(--c3)", items:[[13,"운동"],[14,"골고루 먹기"],[15,"일찍 자기"],[16,"스마트폰 조절"],[17,"환경"]] },
+  { name:"자신감·마음",   c:"var(--c4)", items:[[18,"자신감"],[19,"실패해도 괜찮아"],[20,"감정 표현"],[21,"나다운 길"],[22,"마음 다스리기"],[23,"꾸준함"],[24,"기다림"],[25,"용기"]] },
+  { name:"발표·표현",     c:"var(--c5)", items:[[26,"발표"],[27,"그림"],[28,"글쓰기"]] },
+  { name:"예체능·도전",   c:"var(--c6)", items:[[29,"음악"],[30,"춤"],[31,"새로운 도전"],[32,"꿈"],[33,"나만의 땅"]] },
+];
+const LANDS = {}; CATS.forEach(k => k.items.forEach(([p,n]) => LANDS[p] = { p, n, c:k.c }));
+const OWN = 33;            // 나만의 땅: 랜덤에서 뺀다
+const PICKS = 3;
+
+/* 저장: 이 태블릿에만 */
+const KEY = "heman-land-v1";
 let mem = null;
 function load(){
-  try{ const s = JSON.parse(localStorage.getItem(KEY)); if (s) return s; }catch(e){}
-  return mem || { students:25, cards:33, picks:3, votes:{}, revealed:false, top:null, tieNote:"", rand:null };
+  try{ const s = JSON.parse(localStorage.getItem(KEY)); if (s && s.v === 1) return s; }catch(e){}
+  return mem || { v:1, students:25, votes:{} };   // votes[번호] = {picks:[쪽…], rand:쪽}
 }
 function save(){ mem = S; try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){} }
 let S = load();
 
 const $ = id => document.getElementById(id);
-function show(id){ document.querySelectorAll(".screen").forEach(s => s.classList.toggle("on", s.id === id)); }
+function show(id){ document.querySelectorAll(".screen").forEach(s => s.classList.toggle("on", s.id === id)); window.scrollTo(0,0); }
+const flagSvg = '<svg class="flag"><use href="#flag"/></svg>';
 
-/* 번호 판 */
+/* ---------- 번호 판 ---------- */
 function renderHome(){
   const nums = $("nums"); nums.innerHTML = "";
   for (let i = 1; i <= S.students; i++){
     const b = document.createElement("button");
-    b.className = "num" + (S.votes[i] ? " done" : "");
-    b.textContent = i;
+    b.className = "num px" + (S.votes[i] ? " done" : "");
+    b.innerHTML = i + flagSvg;
     b.onclick = () => openPick(i);
     nums.appendChild(b);
   }
-  $("progress").textContent = `${Object.keys(S.votes).length} / ${S.students}명 완료`;
+  const done = Object.keys(S.votes).filter(k => +k <= S.students).length;
+  $("doneN").textContent = done; $("totN").textContent = S.students;
+  const cells = $("cells"); cells.style.setProperty("--n", S.students);
+  cells.innerHTML = Array.from({length:S.students}, (_,i) => `<i class="${S.votes[i+1] ? "on" : ""}"></i>`).join("");
   show("home");
 }
 
-/* 카드 고르기 */
+/* ---------- 땅 고르기 ---------- */
 let who = null, sel = [];
 function openPick(n){
-  who = n; sel = (S.votes[n] || []).slice();
-  $("pickWho").textContent = `${n}번`;
-  const cards = $("cards"); cards.innerHTML = "";
-  const cols = S.cards <= 33 ? 11 : 12;
-  cards.style.gridTemplateColumns = `repeat(${cols},1fr)`;
-  for (let i = 1; i <= S.cards; i++){
-    const b = document.createElement("button");
-    b.className = "c"; b.textContent = i; b.dataset.n = i;
-    b.onclick = () => toggle(i, b);
-    cards.appendChild(b);
-  }
+  who = n; sel = S.votes[n] ? S.votes[n].picks.slice() : [];
+  $("who").textContent = `${n}번`;
+  const board = $("board"); board.innerHTML = "";
+  CATS.forEach(k => {
+    const col = document.createElement("div"); col.className = "col"; col.style.setProperty("--cc", k.c);
+    col.innerHTML = `<div class="colh">${k.name}</div>`;
+    k.items.forEach(([p,nm]) => {
+      const b = document.createElement("button");
+      b.className = "land px" + (p === OWN ? " own" : ""); b.dataset.p = p;
+      b.innerHTML = `<span class="nm">${nm}</span><span class="pg">${p}</span><span class="badge"></span>`;
+      b.onclick = () => toggle(p);
+      col.appendChild(b);
+    });
+    board.appendChild(col);
+  });
   paintPick(); show("pick");
 }
-function toggle(i, b){
-  const k = sel.indexOf(i);
+function toggle(p){
+  const k = sel.indexOf(p);
   if (k >= 0) sel.splice(k, 1);
-  else if (sel.length < S.picks) sel.push(i);
-  else { const c = $("count"); c.classList.remove("shake"); void c.offsetWidth; c.classList.add("shake"); return; }
+  else if (sel.length < PICKS) sel.push(p);
+  else { const s = $("slots"); s.classList.remove("shake"); void s.offsetWidth; s.classList.add("shake"); return; }
   paintPick();
 }
 function paintPick(){
-  const full = sel.length >= S.picks;
-  document.querySelectorAll("#cards .c").forEach(b => {
-    const on = sel.includes(+b.dataset.n);
-    b.classList.toggle("sel", on);
-    b.classList.toggle("dim", full && !on);
+  const full = sel.length >= PICKS;
+  document.querySelectorAll("#board .land").forEach(b => {
+    const k = sel.indexOf(+b.dataset.p);
+    b.classList.toggle("sel", k >= 0);
+    b.classList.toggle("dim", full && k < 0);
+    b.querySelector(".badge").textContent = k >= 0 ? k + 1 : "";
   });
-  $("count").innerHTML = full ? `<b>${S.picks}장</b> 다 골랐어요! 완료를 누르세요`
-                              : `<b>${sel.length}</b> / ${S.picks}장 골랐어요`;
+  $("slots").innerHTML = Array.from({length:PICKS}, (_,i) => {
+    const L = LANDS[sel[i]];
+    return L ? `<button class="slot full px" style="--cc:${L.c}" data-p="${L.p}"><span class="k">${i+1}</span>${L.n}</button>`
+             : `<div class="slot px">${i+1}</div>`;
+  }).join("");
+  document.querySelectorAll("#slots .slot.full").forEach(s => s.onclick = () => toggle(+s.dataset.p));
   $("done").disabled = !full;
 }
-$("cancel").onclick = renderHome;
+$("back").onclick = renderHome;
 $("done").onclick = () => {
-  S.votes[who] = sel.slice().sort((a,b) => a-b);
-  // 투표가 바뀌면 이미 본 결과는 다시 계산해야 한다
-  S.revealed = false; S.top = null; S.tieNote = ""; S.rand = null;
+  const old = S.votes[who];
+  const picks = sel.slice();
+  // 랜덤 땅은 한 번 정해지면 그대로. 새로 고른 3개와 겹칠 때만 다시 뽑는다.
+  let rand = old && old.rand && !picks.includes(old.rand) ? old.rand : null;
+  const fresh = !rand;
+  if (!rand){
+    const pool = Object.keys(LANDS).map(Number).filter(p => p !== OWN && !picks.includes(p));
+    rand = pool[Math.floor(Math.random() * pool.length)];
+  }
+  S.votes[who] = { picks, rand };
   save();
-  $("savedWho").textContent = `${who}번 저장했어요!`;
-  $("savedCards").innerHTML = S.votes[who].map(n => `<div class="chip">${n}</div>`).join("");
-  show("saved");
-  setTimeout(renderHome, 1800);
+  showReveal(who, picks, rand, fresh, !!old);
 };
 
-/* 선생님 화면: 오른쪽 아래를 1초 누르기 */
-let hold = null;
-const hot = $("teacherHot");
-hot.addEventListener("pointerdown", () => { hold = setTimeout(openTeacher, 1000); });
-["pointerup","pointerleave","pointercancel"].forEach(e => hot.addEventListener(e, () => clearTimeout(hold)));
+/* ---------- 내 땅 공개 ---------- */
+function cardHtml(L, label, extra=""){
+  return `<div class="card px ${extra}" style="--cc:${L.c}"><div class="t">${label}</div><div class="n">${L.n}</div><div class="p">${L.p}쪽</div></div>`;
+}
+function showReveal(n, picks, rand, fresh, edited){
+  $("rTitle").innerHTML = `${n}번의 <em>땅</em>`;
+  const four = $("four");
+  four.innerHTML = picks.map((p,i) => cardHtml(LANDS[p], `고른 땅 ${i+1}`, "pop")).join("") +
+    `<div class="card px mystery" id="myst"><div class="t">랜덤 땅</div><svg><use href="#dice"/></svg><div class="n" id="mystN">?</div><div class="p">&nbsp;</div></div>`;
+  four.querySelectorAll(".pop").forEach((c,i) => c.style.animationDelay = (i * .12) + "s");
+  $("rNote").textContent = ""; $("next").disabled = true;
+  show("reveal");
+
+  const finish = () => {
+    $("myst").outerHTML = cardHtml(LANDS[rand], "🎲 랜덤 땅", "rand land-in");
+    $("rNote").textContent = fresh ? "이 4개 땅을 색칠해서 명예의 전당에 붙여요!" : "랜덤 땅은 그대로예요. 고른 땅만 바뀌었어요.";
+    $("next").disabled = false;
+    if (fresh) confetti();
+  };
+  if (!fresh){ setTimeout(finish, 350); return; }
+  // 이름이 빠르게 바뀌다가 천천히 멈춘다
+  const pool = Object.keys(LANDS).map(Number).filter(p => p !== OWN && !picks.includes(p));
+  let k = 0; const steps = 24;
+  setTimeout(function tick(){
+    const L = LANDS[k < steps - 1 ? pool[Math.floor(Math.random() * pool.length)] : rand];
+    const m = $("myst"); if (!m) return;
+    $("mystN").textContent = L.n; m.style.setProperty("--cc", L.c); m.style.boxShadow = `inset 0 -8px 0 rgba(0,0,0,.3),0 0 0 3px var(--bg),0 0 0 6px ${L.c}`;
+    if (++k < steps) setTimeout(tick, 40 + k * k * 0.42); else setTimeout(finish, 260);
+  }, 600);
+}
+function confetti(){
+  const box = $("confetti"); box.innerHTML = "";
+  const cols = ["#ffe45c","#ff5cad","#a6f04d","#a97cff","#4de8ff","#ffa050","#ffd23f"];
+  for (let i = 0; i < 70; i++){
+    const e = document.createElement("i");
+    e.style.left = Math.random() * 100 + "vw";
+    e.style.background = cols[i % cols.length];
+    e.style.setProperty("--r", (Math.random() * 720 - 360) + "deg");
+    e.style.animationDuration = (1.6 + Math.random() * 1.6) + "s";
+    e.style.animationDelay = (Math.random() * .4) + "s";
+    const s = 6 + Math.round(Math.random() * 3) * 3; e.style.width = e.style.height = s + "px";
+    box.appendChild(e);
+  }
+  setTimeout(() => box.innerHTML = "", 3800);
+}
+$("next").onclick = renderHome;
+
+/* ---------- 선생님 화면: 오른쪽 아래 1초 누르기 ---------- */
+let holdT = null, holdStart = 0, raf = null;
+const hold = $("hold"), ring = $("ringFill");
+function holdTick(){
+  const t = Math.min(1, (performance.now() - holdStart) / 1000);
+  ring.setAttribute("stroke-dashoffset", 56.5 * (1 - t));
+  if (t >= 1){ endHold(); openTeacher(); return; }
+  raf = requestAnimationFrame(holdTick);
+}
+function endHold(){ cancelAnimationFrame(raf); hold.classList.remove("holding"); ring.setAttribute("stroke-dashoffset", 56.5); }
+hold.addEventListener("pointerdown", e => { e.preventDefault(); holdStart = performance.now(); hold.classList.add("holding"); raf = requestAnimationFrame(holdTick); });
+["pointerup","pointerleave","pointercancel"].forEach(ev => hold.addEventListener(ev, endHold));
 document.addEventListener("contextmenu", e => e.preventDefault());
 
-function tallyCounts(){
-  const t = {}; for (let i = 1; i <= S.cards; i++) t[i] = 0;
-  Object.values(S.votes).forEach(arr => arr.forEach(n => { if (t[n] !== undefined) t[n]++; }));
-  return t;
-}
-function pickTop(t){
-  // 표 많은 순으로 3장. 3등 자리가 동점이면 그 안에서 랜덤.
-  const groups = {};
-  Object.entries(t).forEach(([n,v]) => { if (v > 0) (groups[v] = groups[v] || []).push(+n); });
-  const levels = Object.keys(groups).map(Number).sort((a,b) => b-a);
-  const top = []; let note = "";
-  for (const v of levels){
-    const g = groups[v];
-    const need = 3 - top.length;
-    if (need <= 0) break;
-    if (g.length <= need) top.push(...g);
-    else {
-      const shuffled = g.slice().sort(() => Math.random() - .5).slice(0, need);
-      note = `${v}표 동점(${g.sort((a,b)=>a-b).join(", ")}번) 중에서 ${shuffled.sort((a,b)=>a-b).join(", ")}번을 랜덤으로 골랐어요.`;
-      top.push(...shuffled);
-    }
-  }
-  return { top, note };
-}
-
 function openTeacher(){
-  const voted = Object.keys(S.votes).map(Number);
+  const nums = Object.keys(S.votes).map(Number).filter(n => n <= S.students).sort((a,b) => a-b);
   const miss = []; for (let i = 1; i <= S.students; i++) if (!S.votes[i]) miss.push(i);
-  $("tProg").textContent = `${voted.length} / ${S.students}명 투표했어요`;
-  $("tMiss").textContent = miss.length ? `아직 안 한 번호: ${miss.join(", ")}` : "모두 했어요!";
-  $("setStu").value = S.students; $("setCards").value = S.cards;
-  $("resetNote").textContent = ""; resetArmed = false; $("resetBtn").textContent = "투표 전부 지우기";
-  renderResult();
+  $("tDone").innerHTML = `${nums.length}<small> / ${S.students}명</small>`;
+  $("tMiss").innerHTML = miss.length ? miss.map(n => `<i>${n}</i>`).join("") : `<span style="color:var(--c3)">모두 골랐어요!</span>`;
+
+  const cnt = {}; Object.keys(LANDS).forEach(p => cnt[p] = 0);
+  nums.forEach(n => { const v = S.votes[n]; v.picks.forEach(p => cnt[p]++); cnt[v.rand]++; });
+  const total = Object.values(cnt).reduce((a,b) => a+b, 0);
+  $("tSheets").textContent = `모두 ${total}장`;
+  $("tPrints").innerHTML = Object.values(LANDS).map(L =>
+    `<div class="pr${cnt[L.p] ? "" : " zero"}" style="--cc:${L.c}"><span class="pg">${L.p}쪽</span><span class="nm">${L.n}</span><span class="ct">${cnt[L.p]}</span></div>`).join("");
+
+  const tag = (p, r) => `<span class="tag${r ? " r" : ""}" style="--cc:${LANDS[p].c}">${LANDS[p].n}</span>`;
+  $("tTable").innerHTML = nums.length ? nums.map(n => {
+    const v = S.votes[n];
+    return `<tr><td>${n}번</td><td>${v.picks.map(p => tag(p)).join("")}${tag(v.rand, true)}</td></tr>`;
+  }).join("") : `<tr><td colspan="2" style="color:var(--ink3);font-family:Pretendard">아직 고른 친구가 없어요.</td></tr>`;
+
+  $("setStu").value = S.students;
+  wipeArmed = false; $("wipe").textContent = "전부 지우기";
   show("teacher");
 }
-function renderResult(){
-  const t = tallyCounts();
-  const f = $("final");
-  const slots = [];
-  for (let i = 0; i < 3; i++){
-    const n = S.revealed && S.top ? S.top[i] : null;
-    slots.push(n ? `<div class="fc"><div class="n">${n}</div><div class="l">투표 ${t[n]}표</div></div>`
-                 : `<div class="fc empty"><div class="n">?</div><div class="l">투표 ${i+1}</div></div>`);
-  }
-  slots.push(S.rand ? `<div class="fc rand"><div class="n" id="randN">${S.rand}</div><div class="l">랜덤</div></div>`
-                    : `<div class="fc empty"><div class="n" id="randN">?</div><div class="l">랜덤</div></div>`);
-  f.innerHTML = slots.join("");
-  $("tieNote").textContent = S.revealed ? S.tieNote : "";
-  $("randBtn").disabled = !S.revealed;
-  $("randBtn").textContent = S.rand ? "랜덤 다시 뽑기" : "랜덤 1장 뽑기";
-  $("reveal").textContent = S.revealed ? "결과 다시 계산" : "투표 결과 보기";
-  $("tallyPanel").style.display = S.revealed ? "" : "none";
-  if (S.revealed){
-    $("tally").innerHTML = Object.entries(t).sort((a,b) => b[1]-a[1] || a[0]-b[0]).map(([n,v]) =>
-      `<div class="t${S.top.includes(+n) ? " top" : ""}${S.rand == n ? " rand" : ""}"><div class="n">${n}</div><div class="v">${v}표</div></div>`).join("");
-  }
-}
-$("reveal").onclick = () => {
-  if (!Object.keys(S.votes).length){ $("tieNote").textContent = "아직 투표한 사람이 없어요."; return; }
-  const { top, note } = pickTop(tallyCounts());
-  S.revealed = true; S.top = top; S.tieNote = note; S.rand = null;
-  save(); renderResult();
-};
-let rolling = false;
-$("randBtn").onclick = () => {
-  if (rolling || !S.revealed) return;
-  const pool = []; for (let i = 1; i <= S.cards; i++) if (!S.top.includes(i)) pool.push(i);
-  const final = pool[Math.floor(Math.random() * pool.length)];
-  S.rand = null; renderResult();
-  const slot = $("randN").parentElement; slot.classList.remove("empty"); slot.classList.add("rand");
-  rolling = true; let k = 0; const steps = 26;
-  (function tick(){
-    $("randN").textContent = pool[Math.floor(Math.random() * pool.length)];
-    if (++k < steps) setTimeout(tick, 40 + k * k * 0.5);
-    else { S.rand = final; save(); rolling = false; renderResult(); }
-  })();
-};
+$("toKids").onclick = renderHome;
 $("saveSet").onclick = () => {
-  const st = Math.max(1, Math.min(40, +$("setStu").value || S.students));
-  const cd = Math.max(4, Math.min(60, +$("setCards").value || S.cards));
-  S.students = st;
-  if (cd !== S.cards){ S.cards = cd; Object.keys(S.votes).forEach(k => { S.votes[k] = S.votes[k].filter(n => n <= cd); }); }
-  S.revealed = false; S.top = null; S.rand = null;
+  S.students = Math.max(1, Math.min(40, +$("setStu").value || S.students));
   save(); openTeacher();
 };
-let resetArmed = false;
-$("resetBtn").onclick = () => {
-  if (!resetArmed){ resetArmed = true; $("resetBtn").textContent = "정말 지울까요? 한 번 더 누르기"; return; }
-  S.votes = {}; S.revealed = false; S.top = null; S.tieNote = ""; S.rand = null;
-  save(); openTeacher(); $("resetNote").textContent = "지웠어요.";
+let wipeArmed = false;
+$("wipe").onclick = () => {
+  if (!wipeArmed){ wipeArmed = true; $("wipe").textContent = "정말요? 한 번 더"; return; }
+  S.votes = {}; save(); openTeacher();
 };
-$("closeT").onclick = renderHome;
 
 renderHome();
 </script>
