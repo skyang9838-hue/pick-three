@@ -255,7 +255,7 @@ td:first-child{width:56px}
   <div class="hero">
     <div class="kicker"><svg><use href="#flag"/></svg>픽셀아트 명예의 전당</div>
     <h1>헤맨 만큼<br><em>내 땅</em>이다!</h1>
-    <p>내 번호를 누르면 <b>첫 땅</b>은 <b>랜덤</b>!<br>나머지 <b>2개</b>는 직접 고르세요.</p>
+    <p>내 번호를 누르고<br>넓히고 싶은 <b>땅 2개</b>를 고르세요.</p>
     <div class="meter">
       <div class="lab"><span>고른 친구</span><span><b id="doneN">0</b> / <span id="totN">25</span></span></div>
       <div class="cells" id="cells"></div>
@@ -273,7 +273,7 @@ td:first-child{width:56px}
 <section class="screen" id="pick">
   <div class="pickhead">
     <div class="who px" id="who">7번</div>
-    <div class="ask">나머지 땅 2개를 고르세요<br><span class="first" id="first"></span></div>
+    <div class="ask">넓히고 싶은 땅 2개를 고르세요<small>다시 누르면 빠져요 · 이미 이룬 땅도, 앞으로 넓힐 땅도 좋아요</small></div>
     <div class="slots" id="slots"></div>
     <button class="back" id="back">취소</button>
     <button class="go px" id="done" disabled>완료 ▶</button>
@@ -309,7 +309,7 @@ td:first-child{width:56px}
     </div>
     <div>
       <div class="panel px">
-        <h3>번호별 땅 3개</h3>
+        <h3>번호별 땅 2개</h3>
         <table id="tTable"></table>
       </div>
       <div class="panel px" style="margin-top:14px">
@@ -319,7 +319,7 @@ td:first-child{width:56px}
           <button class="tb px" id="saveSet">저장</button>
           <button class="tb warn px" id="wipe">전부 지우기</button>
         </div>
-        <div class="note" id="wipeNote">첫 땅(랜덤)은 번호를 처음 누를 때 정해지고, 다시 들어와도 바뀌지 않아요. 나만의 땅(33쪽)은 랜덤에서 빠지고, 직접 고를 때만 나와요. 표는 이 태블릿에만 저장돼요.</div>
+        <div class="note" id="wipeNote">친구가 번호를 다시 누르면 고른 땅을 고칠 수 있어요. 표는 이 태블릿에만 저장돼요.</div>
       </div>
     </div>
   </div>
@@ -338,7 +338,7 @@ const CATS = [
   { name:"예체능·도전",   c:"var(--c6)", items:[[29,"음악"],[30,"춤"],[31,"새로운 도전"],[32,"꿈"],[33,"나만의 땅"]] },
 ];
 const LANDS = {}; CATS.forEach(k => k.items.forEach(([p,n]) => LANDS[p] = { p, n, c:k.c }));
-const OWN = 33;            // 나만의 땅: 랜덤에서 뺀다
+const OWN = 33;            // 나만의 땅 (줄무늬 칸)
 const PICKS = 2;
 
 /* 저장: 이 태블릿에만 */
@@ -373,51 +373,28 @@ function renderHome(){
   show("home");
 }
 
-/* ---------- 1단계: 첫 땅은 랜덤 ---------- */
+/* ---------- 땅 고르기 ---------- */
 let who = null, sel = [];
 function cardHtml(L, label, extra=""){
   return `<div class="card px ${extra}" style="--cc:${L.c}"><div class="t">${label}</div><div class="n">${L.n}</div><div class="p">${L.p}쪽</div></div>`;
 }
 function openNum(n){
-  who = n;
-  if (S.votes[n]) { openPick(n); return; }        // 이미 첫 땅을 받았으면 바로 고르기 (랜덤은 바뀌지 않음)
-  const pool = Object.keys(LANDS).map(Number).filter(p => p !== OWN);
-  const rand = pool[Math.floor(Math.random() * pool.length)];
-  S.votes[n] = { picks:[], rand }; save();          // 뽑자마자 저장: 취소하고 다시 들어와도 같은 땅
-  $("rTitle").innerHTML = `${n}번의 <em>첫 땅</em>은?`;
-  $("four").innerHTML = `<div class="card px mystery solo" id="myst"><div class="t">랜덤 땅</div><svg><use href="#dice"/></svg><div class="n" id="mystN">?</div><div class="p">&nbsp;</div></div>`;
-  $("rNote").textContent = ""; $("next").disabled = true; $("next").textContent = "나머지 2개 고르기 ▶";
-  $("next").onclick = () => openPick(n);
-  show("reveal");
-  const finish = () => {
-    $("myst").outerHTML = cardHtml(LANDS[rand], "🎲 첫 땅", "rand solo land-in");
-    $("rNote").textContent = "첫 땅은 이걸로! 이제 나머지 2개는 직접 골라요.";
-    $("next").disabled = false;
-    confetti();
-  };
-  // 이름이 빠르게 바뀌다가 천천히 멈춘다
-  let k = 0; const steps = 24;
-  setTimeout(function tick(){
-    const L = LANDS[k < steps - 1 ? pool[Math.floor(Math.random() * pool.length)] : rand];
-    const m = $("myst"); if (!m) return;
-    $("mystN").textContent = L.n; m.style.boxShadow = `inset 0 -8px 0 rgba(0,0,0,.3),0 0 0 3px var(--bg),0 0 0 6px ${L.c}`;
-    if (++k < steps) setTimeout(tick, 40 + k * k * 0.42); else setTimeout(finish, 260);
-  }, 600);
+  if (!S.votes[n]) { S.votes[n] = { picks:[] }; }
+  openPick(n);
 }
 
 /* ---------- 2단계: 나머지 2개 고르기 ---------- */
 function openPick(n){
   $("confetti").innerHTML = "";
-  who = n; const v = S.votes[n]; sel = v.picks.slice();
+  who = n; const v = S.votes[n]; sel = (v.picks || []).slice();
   $("who").textContent = `${n}번`;
-  $("first").textContent = `🎲 첫 땅 · ${LANDS[v.rand].n}`;
   const board = $("board"); board.innerHTML = "";
   CATS.forEach(k => {
     const col = document.createElement("div"); col.className = "col"; col.style.setProperty("--cc", k.c);
     col.innerHTML = `<div class="colh">${k.name}</div>`;
     k.items.forEach(([p,nm]) => {
       const b = document.createElement("button");
-      const fixed = p === v.rand;
+      const fixed = false;
       b.className = "land px" + (p === OWN ? " own" : "") + (fixed ? " fixed" : ""); b.dataset.p = p;
       b.innerHTML = `<span class="nm">${nm}</span><span class="pg">${p}</span><span class="badge">${fixed ? "🎲" : ""}</span>`;
       if (!fixed) b.onclick = () => toggle(p);
@@ -456,10 +433,9 @@ $("done").onclick = () => {
   const edited = v.picks.length === PICKS;
   v.picks = sel.slice(); save();
   $("rTitle").innerHTML = `${who}번의 <em>땅</em>`;
-  $("four").innerHTML = cardHtml(LANDS[v.rand], "🎲 첫 땅", "rand pop") +
-    v.picks.map((p,i) => cardHtml(LANDS[p], `고른 땅 ${i+1}`, "pop")).join("");
+  $("four").innerHTML = v.picks.map((p,i) => cardHtml(LANDS[p], `고른 땅 ${i+1}`, "pop")).join("");
   $("four").querySelectorAll(".pop").forEach((c,i) => c.style.animationDelay = (i * .12) + "s");
-  $("rNote").textContent = edited ? "고친 땅으로 바꿨어요. 첫 땅은 그대로예요." : "이 3개 땅을 색칠해서 명예의 전당에 붙여요!";
+  $("rNote").textContent = edited ? "고친 땅으로 바꿨어요." : "이 2개 땅을 색칠해서 명예의 전당에 붙여요!";
   $("next").textContent = "다음 친구에게 ▶"; $("next").onclick = renderHome; $("next").disabled = true;
   show("reveal");
   if (!edited) confetti();
@@ -503,7 +479,7 @@ function openTeacher(){
   $("tMiss").innerHTML = miss.length ? miss.map(n => `<i>${n}</i>`).join("") : `<span style="color:var(--c3)">모두 골랐어요!</span>`;
 
   const cnt = {}; Object.keys(LANDS).forEach(p => cnt[p] = 0);
-  nums.forEach(n => { const v = S.votes[n]; v.picks.forEach(p => cnt[p]++); cnt[v.rand]++; });
+  nums.forEach(n => { S.votes[n].picks.forEach(p => cnt[p]++); });
   const total = Object.values(cnt).reduce((a,b) => a+b, 0);
   $("tSheets").textContent = `모두 ${total}장`;
   $("tPrints").innerHTML = Object.values(LANDS).map(L =>
@@ -512,7 +488,7 @@ function openTeacher(){
   const tag = (p, r) => `<span class="tag${r ? " r" : ""}" style="--cc:${LANDS[p].c}">${LANDS[p].n}</span>`;
   $("tTable").innerHTML = nums.length ? nums.map(n => {
     const v = S.votes[n];
-    return `<tr><td>${n}번</td><td>${tag(v.rand, true)}${v.picks.map(p => tag(p)).join("")}</td></tr>`;
+    return `<tr><td>${n}번</td><td>${v.picks.map(p => tag(p)).join("")}</td></tr>`;
   }).join("") : `<tr><td colspan="2" style="color:var(--ink3);font-family:Pretendard">아직 고른 친구가 없어요.</td></tr>`;
 
   $("setStu").value = S.students;
